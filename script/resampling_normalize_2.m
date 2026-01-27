@@ -36,8 +36,6 @@ function [] = resampling_normalize_2(b0, mask_brain, path_download, output_path)
 %   - 'mask_125.nii.gz'  : Resampled brain mask (B0 space)
 %   - 'B0_N.nii.gz'          : Normalized B0 image
 
-cd(output_path);
-
 % Construct path to the reference image SIGNAL
 ref_img = fullfile(path_download, 'SIGNAL.nii.gz');
 
@@ -47,15 +45,12 @@ unix(horzcat('flirt -in ', b0, ' -ref ', ref_img, ' -out ', output_path, '/b0_12
 unix(horzcat('flirt -in ', mask_brain, ' -applyxfm -init ', output_path, '/b0_125.mat -out ', output_path, '/mask_125.nii.gz -paddingsize 0.0 -interp nearestneighbour -ref ', output_path, '/b0_125.nii.gz'));
 
 % Load B0 image and replace NaN with 0
-!gunzip -f b0_125.nii.gz
-b0_img = niftiread('b0_125.nii');
+b0_img = niftiread([output_path, '/b0_125.nii.gz']);
+b0_hdr = niftiinfo([output_path, '/b0_125.nii.gz');
 b0_img(isnan(b0_img)) = 0;
-!gzip -f b0_125.nii
 
 % Load resampled brain mask
-!gunzip -f mask_125.nii.gz
-mask_img = niftiread('mask_125.nii');
-!gzip -f mask_125.nii
+mask_img = niftiread([output_path, '/mask_125.nii.gz');
 
 %% 2) Intensity normalization within brain mask
 disp('Normalizing B0 image intensity within brain mask...');
@@ -70,9 +65,8 @@ b0_3d = reshape(b0_vector, size(b0_img));
 b0_norm = (b0_3d - mean_brain) / std_brain;
 
 b0_img = b0_norm;
-b0_hdr = niftiinfo('b0_125.nii');
-niftiwrite(b0_img, 'B0_N.nii', b0_hdr);
-!gzip -f B0_N.nii
+niftiwrite(b0_img, [output_path, '/B0_N.nii'], b0_hdr);
+unix(horzcat('gzip -f ', output_path, '/B0_N.nii'))
 
 disp('Resampling and normalization completed!');
 end
