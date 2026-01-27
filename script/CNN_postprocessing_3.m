@@ -18,22 +18,16 @@ b0_resampled_mat = fullfile(output_path, 'b0_125.mat');      % from script 2
 seg_den_suit     = fullfile(output_path, 'DN_diff_SUIT.nii.gz');    % from script 1
 
 %% Load CNN model
-cd(path_download)
-load('rete1.mat');
-
-%% Move to output folder
-cd(output_path);
+load(fullfile(path_download, 'rete1.mat'));
 
 %% Initialize segmentation volume
 dentati_sa = zeros(86, 71, 66);
 
 if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     % Load normalized B0 image
-    !gunzip -f B0_N.nii.gz
-    b0_img = niftiread('B0_N.nii');
-    b0_hdr = niftiinfo('B0_N.nii');
+    b0_img = niftiread(fullfile(output_path, 'B0_N.nii.gz'));
+    b0_hdr = niftiinfo(fullfile(output_path, 'B0_N.nii.gz'));
     b0_test = b0_img(30:115, 10:80, 5:70); % crop as in original
-    !gzip -f B0_N.nii
     
     % CNN segmentation slice-by-slice
     for slice = 1:66
@@ -49,7 +43,8 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     % Save CNN segmentation in resampled space
     dentati_sa_hdr = b0_hdr;
     dentati_sa_img = dent_sa_dim;
-    niftiwrite(dentati_sa_img, 'DN_CNN_125.nii', dentati_sa_hdr);
+    niftiwrite(dentati_sa_img, fullfile(output_path, 'DN_CNN_125.nii'), dentati_sa_hdr);
+    unix(horzcat('gzip -f ', output_path, '/DN_CNN_125.nii'));
     
     %% Map segmentation back to original B0 space
     unix(horzcat('convert_xfm -omat ', fullfile(output_path,'b0_125_inv.mat'), ' -inverse ', b0_resampled_mat));
@@ -58,17 +53,11 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
 
     %% Dilate SUIT mask for post processing
     !fslmaths DN_diff_SUIT.nii -dilM -dilM DN_diff_SUIT_dil.nii.gz
-    gunzip('DN_diff_SUIT_dil.nii.gz');
-    maschera_dil_img = niftiread('DN_diff_SUIT_dil.nii');
-    maschera_dil_hdr = niftiinfo('DN_diff_SUIT_dil.nii');
-    gzip('DN_diff_SUIT_dil.nii');
-    delete('DN_diff_SUIT_dil.nii');
+    maschera_dil_img = niftiread(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
+    maschera_dil_hdr = niftiinfo(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
     
     % Load CNN segmentation in original space
-    gunzip('DN_CNN_orig.nii.gz');
-    DN_CNN = niftiread('DN_CNN_orig.nii');
-    gzip('DN_CNN_orig.nii');
-    delete('DN_CNN_orig.nii');
+    DN_CNN = niftiread(fullfile(output_path, 'DN_CNN_orig.nii.gz'));
     
     % Apply SUIT mask to CNN segmentation
     DN_CNN_final_vect = maschera_dil_img(:) .* DN_CNN(:);
@@ -78,8 +67,8 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     sa_filtrata_img = DN_CNN_final;
     
     % Save post-processed segmentation
-    niftiwrite(sa_filtrata_img, 'DN_CNN_final.nii', sa_filtrata_hdr);
-    gzip('DN_CNN_final.nii');
+    niftiwrite(sa_filtrata_img, fullfile(output_path, 'DN_CNN_final.nii'), sa_filtrata_hdr);
+    unix(horzcat('gzip -f ', output_path, '/DN_CNN_final.nii'));
     
 else
     disp('Required inputs from previous steps not found! Run scripts 1 and 2 first.');
