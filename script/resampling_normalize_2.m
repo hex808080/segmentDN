@@ -48,15 +48,13 @@ unix(horzcat('flirt -in ', mask_brain, ' -applyxfm -init ', output_path, '/b0_12
 
 % Load B0 image and replace NaN with 0
 !gunzip -f b0_125.nii.gz
-b0_struct = load_untouch_nii('b0_125.nii');
-b0_img = b0_struct.img;
+b0_img = niftiread('b0_125.nii');
 b0_img(isnan(b0_img)) = 0;
 !gzip -f b0_125.nii
 
 % Load resampled brain mask
 !gunzip -f mask_125.nii.gz
-mask_struct = load_untouch_nii('mask_125.nii');
-mask_img = mask_struct.img;
+mask_img = niftiread('mask_125.nii');
 !gzip -f mask_125.nii
 
 %% 2) Intensity normalization within brain mask
@@ -71,8 +69,9 @@ std_brain = std(brain_voxels);
 b0_3d = reshape(b0_vector, size(b0_img));
 b0_norm = (b0_3d - mean_brain) / std_brain;
 
-b0_struct.img = b0_norm;
-save_untouch_nii(b0_struct, 'B0_N.nii');
+b0_img = b0_norm;
+b0_hdr = niftiinfo('b0_125.nii');
+niftiwrite(b0_img, 'B0_N.nii', b0_hdr);
 !gzip -f B0_N.nii
 
 disp('Resampling and normalization completed!');
