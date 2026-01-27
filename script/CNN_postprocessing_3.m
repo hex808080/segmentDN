@@ -30,8 +30,8 @@ dentati_sa = zeros(86, 71, 66);
 if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     % Load normalized B0 image
     !gunzip -f B0_N.nii.gz
-    b0_struct = load_untouch_nii('B0_N.nii');
-    b0_img = b0_struct.img;
+    b0_img = niftiread('B0_N.nii');
+    b0_hdr = niftiinfo('B0_N.nii');
     b0_test = b0_img(30:115, 10:80, 5:70); % crop as in original
     !gzip -f B0_N.nii
     
@@ -47,9 +47,9 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     dent_sa_dim(30:115, 10:80, 5:70) = dentati_sa;
     
     % Save CNN segmentation in resampled space
-    dentati_sa_struct = b0_struct;
-    dentati_sa_struct.img = dent_sa_dim;
-    save_untouch_nii(dentati_sa_struct, 'DN_CNN_125.nii');
+    dentati_sa_hdr = b0_hdr;
+    dentati_sa_img = dent_sa_dim;
+    niftiwrite(dentati_sa_img, 'DN_CNN_125.nii', dentati_sa_hdr);
     
     %% Map segmentation back to original B0 space
     unix(horzcat('convert_xfm -omat ', fullfile(output_path,'b0_125_inv.mat'), ' -inverse ', b0_resampled_mat));
@@ -59,27 +59,26 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     %% Dilate SUIT mask for post processing
     !fslmaths DN_diff_SUIT.nii -dilM -dilM DN_diff_SUIT_dil.nii.gz
     gunzip('DN_diff_SUIT_dil.nii.gz');
-    maschera_dil_struct = load_untouch_nii('DN_diff_SUIT_dil.nii');
-    maschera_dil = maschera_dil_struct.img;
+    maschera_dil_img = niftiread('DN_diff_SUIT_dil.nii');
+    maschera_dil_hdr = niftiinfo('DN_diff_SUIT_dil.nii');
     gzip('DN_diff_SUIT_dil.nii');
     delete('DN_diff_SUIT_dil.nii');
     
     % Load CNN segmentation in original space
     gunzip('DN_CNN_orig.nii.gz');
-    DN_CNN_struct = load_untouch_nii('DN_CNN_orig.nii');
-    DN_CNN = DN_CNN_struct.img;
+    DN_CNN = niftiread('DN_CNN_orig.nii');
     gzip('DN_CNN_orig.nii');
     delete('DN_CNN_orig.nii');
     
     % Apply SUIT mask to CNN segmentation
-    DN_CNN_final_vect = maschera_dil(:) .* DN_CNN(:);
+    DN_CNN_final_vect = maschera_dil_img(:) .* DN_CNN(:);
     DN_CNN_final = reshape(DN_CNN_final_vect, size(DN_CNN));
     
-    sa_filtrata = maschera_dil_struct;
-    sa_filtrata.img = DN_CNN_final;
+    sa_filtrata_hdr = maschera_dil_hdr;
+    sa_filtrata_img = DN_CNN_final;
     
     % Save post-processed segmentation
-    save_untouch_nii(sa_filtrata, 'DN_CNN_final.nii');
+    niftiwrite(sa_filtrata_img, 'DN_CNN_final.nii', sa_filtrata_hdr);
     gzip('DN_CNN_final.nii');
     
 else
