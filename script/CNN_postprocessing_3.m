@@ -18,7 +18,7 @@ b0_resampled_mat = fullfile(output_path, 'b0_125.mat');      % from script 2
 seg_den_suit     = fullfile(output_path, 'DN_diff_SUIT.nii.gz');    % from script 1
 
 %% Load CNN model
-load(fullfile(path_download, 'rete1.mat'));
+load(fullfile(path_download, 'rete1_v73.mat'));
 
 %% Initialize segmentation volume
 dentati_sa = zeros(86, 71, 66);
@@ -53,7 +53,7 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
         ' -out ', fullfile(output_path,'DN_CNN_orig.nii.gz'), ' -paddingsize 0.0 -interp nearestneighbour -ref ', b0));
 
     %% Dilate SUIT mask for post processing
-    unix(horzcat('fslmaths ', fullfile(output_path, 'DN_diff_SUIT.nii.gz'), ' -dilM -dilM ', fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz')))
+    unix(horzcat('fslmaths ', fullfile(output_path, 'DN_diff_SUIT.nii.gz'), ' -dilM -dilM ', fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz')));
     maschera_dil_img = niftiread(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
     maschera_dil_hdr = niftiinfo(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
     
