@@ -42,17 +42,18 @@ if exist(seg_den_suit, 'file') && exist(b0_resampled_mat, 'file')
     
     % Save CNN segmentation in resampled space
     dentati_sa_hdr = b0_hdr;
+    dentati_sa_hdr.Datatype = 'double';
     dentati_sa_img = dent_sa_dim;
     niftiwrite(dentati_sa_img, fullfile(output_path, 'DN_CNN_125.nii'), dentati_sa_hdr);
     unix(horzcat('gzip -f ', output_path, '/DN_CNN_125.nii'));
     
     %% Map segmentation back to original B0 space
     unix(horzcat('convert_xfm -omat ', fullfile(output_path,'b0_125_inv.mat'), ' -inverse ', b0_resampled_mat));
-    unix(horzcat('flirt -in ', fullfile(output_path,'DN_CNN_125.nii'), ' -applyxfm -init ', fullfile(output_path,'b0_125_inv.mat'), ...
+    unix(horzcat('flirt -in ', fullfile(output_path, 'DN_CNN_125.nii.gz'), ' -applyxfm -init ', fullfile(output_path,'b0_125_inv.mat'), ...
         ' -out ', fullfile(output_path,'DN_CNN_orig.nii.gz'), ' -paddingsize 0.0 -interp nearestneighbour -ref ', b0));
 
     %% Dilate SUIT mask for post processing
-    !fslmaths DN_diff_SUIT.nii -dilM -dilM DN_diff_SUIT_dil.nii.gz
+    unix(horzcat('fslmaths ', fullfile(output_path, 'DDN_diff_SUIT.nii.gz'), ' -dilM -dilM ', fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz')))
     maschera_dil_img = niftiread(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
     maschera_dil_hdr = niftiinfo(fullfile(output_path, 'DN_diff_SUIT_dil.nii.gz'));
     
