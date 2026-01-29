@@ -30,32 +30,30 @@ function [] = segment_DN_SUIT_1(T1, b0, path_download, output_path)
 %
 % All generated files will be saved in output_path
 
-cd(output_path); % Switch to the output folder
-
 %% Extract DN from SUIT cerebellum atlas
-system(horzcat('fslmaths ', path_download, '/Cerebellum-MNI_1mm.nii.gz -thr 29 -uthr 30 -bin DN_suit_MNI.nii.gz'));
+system(horzcat('fslmaths ', path_download, '/Cerebellum-MNI_1mm.nii.gz -thr 29 -uthr 30 -bin ', output_path, '/DN_suit_MNI.nii.gz'));
 
 %% Register T1 to MNI space
 disp('Registering T1-weighted image to MNI space...')
-system(horzcat('flirt -in ', T1, ' -ref ', path_download, '/MNI152_T1_1mm.nii.gz -out T12MNI -omat T12MNI.mat -bins 256 -cost normmi -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 12 -interp sinc -sincwidth 7 -sincwindow hanning'));
-system(horzcat('fnirt --in=', T1, ' --aff=T12MNI.mat --config=', path_download, '/T1_2_MNI152_2mm.cnf --iout=T12MNI_fnirt --cout=T1toMNI_coef --fout=T12MNI_warp'));
+system(horzcat('flirt -in ', T1, ' -ref ', path_download, '/MNI152_T1_1mm.nii.gz -out ', output_path, '/T12MNI -omat T12MNI.mat -bins 256 -cost normmi -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 12 -interp sinc -sincwidth 7 -sincwindow hanning'));
+system(horzcat('fnirt --in=', T1, ' --aff=', output_path, '/T12MNI.mat --config=', path_download, '/T1_2_MNI152_2mm.cnf --iout=', output_path, '/T12MNI_fnirt --cout=', output_path, '/T1toMNI_coef --fout=', output_path, '/T12MNI_warp'));
 
 %% Invert the warp
 disp('Inverting the warp...')
-system(horzcat('invwarp -w T12MNI_warp.nii.gz -o MNI_warpcoef.nii.gz -r ', T1));
+system(horzcat('invwarp -w ', output_path, '/T12MNI_warp.nii.gz -o ', output_path, '/MNI_warpcoef.nii.gz -r ', T1));
 
 %% Map DN to T1 space
-system(horzcat('applywarp -i DN_suit_MNI.nii.gz -r ', T1, ' -w MNI_warpcoef.nii.gz -o DN_T1_suit.nii.gz --interp=nn'));
+system(horzcat('applywarp -i ', output_path, '/DN_suit_MNI.nii.gz -r ', T1, ' -w ', output_path, '/MNI_warpcoef.nii.gz -o ', output_path, '/DN_T1_suit.nii.gz --interp=nn'));
 
 %% Register T1 to B0 to bring DN into diffusion space
-system(horzcat('flirt -in ', b0, ' -ref ', T1, ' -o diff2T1 -omat diff2T1.mat -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 6 -bins 256 -cost mutualinfo -interp trilinear'));
+system(horzcat('flirt -in ', b0, ' -ref ', T1, ' -o ', output_path, '/diff2T1 -omat ', output_path, '/diff2T1.mat -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 6 -bins 256 -cost mutualinfo -interp trilinear'));
 
-!convert_xfm -omat T12diff.mat -inverse diff2T1.mat
+system(horzcat('convert_xfm -omat ', output_path, '/T12diff.mat -inverse ', output_path, '/diff2T1.mat'))
 
-system(horzcat('flirt -in ', T1, ' -ref ', b0, ' -o T1_nu2diff -applyxfm -init T12diff.mat -interp sinc -sincwidth 7 -sincwindow hanning'));
+system(horzcat('flirt -in ', T1, ' -ref ', b0, ' -o ', output_path, '/T1_nu2diff -applyxfm -init ', output_path, '/T12diff.mat -interp sinc -sincwidth 7 -sincwindow hanning'));
 
 %% Map DN to B0 space
 disp('Mapping DN atlas to diffusion space...')
-system(horzcat('flirt -in DN_T1_suit -ref ', b0, ' -o DN_diff_SUIT -applyxfm -init T12diff.mat -interp nearestneighbour'));
+system(horzcat('flirt -in ', output_path, '/DN_T1_suit -ref ', b0, ' -o ', output_path, '/DN_diff_SUIT -applyxfm -init ', output_path, '/T12diff.mat -interp nearestneighbour'));
 
 end
