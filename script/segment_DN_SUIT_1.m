@@ -35,7 +35,7 @@ system(horzcat('fslmaths ', path_download, '/Cerebellum-MNI_1mm.nii.gz -thr 29 -
 
 %% Register T1 to MNI space
 disp('Registering T1-weighted image to MNI space...')
-system(horzcat('flirt -in ', T1, ' -ref ', path_download, '/MNI152_T1_1mm.nii.gz -out ', output_path, '/T12MNI -omat T12MNI.mat -bins 256 -cost normmi -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 12 -interp sinc -sincwidth 7 -sincwindow hanning'));
+system(horzcat('flirt -in ', T1, ' -ref ', path_download, '/MNI152_T1_1mm.nii.gz -out ', output_path, '/T12MNI -omat ', output_path, '/T12MNI.mat -bins 256 -cost normmi -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 12 -interp sinc -sincwidth 7 -sincwindow hanning'));
 system(horzcat('fnirt --in=', T1, ' --aff=', output_path, '/T12MNI.mat --config=', path_download, '/T1_2_MNI152_2mm.cnf --iout=', output_path, '/T12MNI_fnirt --cout=', output_path, '/T1toMNI_coef --fout=', output_path, '/T12MNI_warp'));
 
 %% Invert the warp
@@ -48,7 +48,7 @@ system(horzcat('applywarp -i ', output_path, '/DN_suit_MNI.nii.gz -r ', T1, ' -w
 %% Register T1 to B0 to bring DN into diffusion space
 system(horzcat('flirt -in ', b0, ' -ref ', T1, ' -o ', output_path, '/diff2T1 -omat ', output_path, '/diff2T1.mat -searchrx -90 90 -searchry -90 90 -searchrz -90 90 -dof 6 -bins 256 -cost mutualinfo -interp trilinear'));
 
-system(horzcat('convert_xfm -omat ', output_path, '/T12diff.mat -inverse ', output_path, '/diff2T1.mat'))
+system(horzcat('convert_xfm -omat ', output_path, '/T12diff.mat -inverse ', output_path, '/diff2T1.mat'));
 
 system(horzcat('flirt -in ', T1, ' -ref ', b0, ' -o ', output_path, '/T1_nu2diff -applyxfm -init ', output_path, '/T12diff.mat -interp sinc -sincwidth 7 -sincwindow hanning'));
 
